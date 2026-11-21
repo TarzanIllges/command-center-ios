@@ -1,0 +1,39 @@
+name: Build iPhone app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate the Xcode project
+        run: brew install xcodegen && xcodegen generate
+
+      - name: Build (unsigned; AltStore signs it with your Apple ID when it installs)
+        run: |
+          xcodebuild -project CommandCenter.xcodeproj -scheme CommandCenter -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            MARKETING_VERSION=1.0.${{ github.run_number }} CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+
+      - name: Package the .ipa
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/CommandCenter.app Payload/
+          zip -qry CommandCenter.ipa Payload
+          ls -la CommandCenter.ipa
+
+      - name: Publish a release your server downloads
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Command Center 1.0.${{ github.run_number }}
+          files: CommandCenter.ipa

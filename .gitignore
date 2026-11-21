@@ -1,0 +1,5 @@
+build/
+*.xcodeproj/
+Sources/Info.plist
+*.ipa
+Payload/
