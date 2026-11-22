@@ -3,3 +3,4 @@ build/
 Sources/Info.plist
 *.ipa
 Payload/
+Widget/Info.plist
