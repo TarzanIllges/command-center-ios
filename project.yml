@@ -27,6 +27,8 @@ targets:
             CFBundleURLSchemes: [commandcenter]
     entitlements:
       path: Sources/CommandCenter.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.tarzanillges.commandcenter]
     dependencies:
       - target: OfficeWidget
     settings:
@@ -55,6 +57,8 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: Widget/OfficeWidget.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.tarzanillges.commandcenter]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tarzanillges.commandcenter.widget
