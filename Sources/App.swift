@@ -22,6 +22,7 @@ struct CommandCenterApp: App {
                     guard url.host == "set",
                           let value = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "url" })?.value,
                           let server = URL(string: value), server.scheme == "https" else { return }
+                    if server.absoluteString != serverURL { WidgetShared.forget() }
                     serverURL = server.absoluteString
                 }
         }
@@ -38,7 +39,7 @@ struct RootView: View {
 
     var body: some View {
         if let url = URL(string: serverURL), !serverURL.isEmpty {
-            WebView(url: url, onChangeServer: { serverURL = "" })
+            WebView(url: url, onChangeServer: { serverURL = ""; WidgetShared.forget() })
                 .ignoresSafeArea(.container, edges: .bottom)
                 .background(Color(red: 0.043, green: 0.063, blue: 0.125))
         } else {
@@ -53,7 +54,7 @@ struct RootView: View {
                     .textFieldStyle(.roundedBorder)
                 Button("Connect") {
                     let v = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if let u = URL(string: v), u.scheme == "https" { serverURL = u.absoluteString }
+                    if let u = URL(string: v), u.scheme == "https" { WidgetShared.forget(); serverURL = u.absoluteString }
                 }
                 .buttonStyle(.borderedProminent)
                 Spacer()
@@ -112,7 +113,11 @@ struct WebView: UIViewRepresentable {
             guard webView.url?.host == parent.url.host else { return }
             let server = parent.url
             webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { cookies in
-                let mine = cookies.filter { server.host?.hasSuffix($0.domain.trimmingCharacters(in: CharacterSet(charactersIn: "."))) ?? false }
+                let host = server.host?.lowercased() ?? ""
+                let mine = cookies.filter { c in
+                    let domain = c.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+                    return host == domain || host.hasSuffix("." + domain)
+                }
                 guard !mine.isEmpty else { return }
                 var req = URLRequest(url: server.appendingPathComponent("api/widget/key"))
                 req.setValue(mine.map { "\($0.name)=\($0.value)" }.joined(separator: "; "), forHTTPHeaderField: "Cookie")

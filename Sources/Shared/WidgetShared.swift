@@ -1,9 +1,24 @@
 import Foundation
+import WidgetKit
 
 /// Settings the app shares with the home-screen widget (App Group).
 enum WidgetShared {
-    static let group = "group.com.tarzanillges.commandcenter"
+    /// AltStore re-signs with your team and renames the App Group (it adds your team ID, like it does to the bundle ID),
+    /// so the group is worked out from this install's bundle ID and the first one iOS actually grants is used.
+    static let group: String = {
+        let base = "group.com.tarzanillges.commandcenter"
+        let bundle = (Bundle.main.bundleIdentifier ?? "").replacingOccurrences(of: ".widget", with: "")
+        let candidates = [base, "group." + bundle]
+        return candidates.first { FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: $0) != nil } ?? base
+    }()
     static var defaults: UserDefaults { UserDefaults(suiteName: group) ?? .standard }
+
+    /// Called when the app is pointed at a different server: the widget must not keep showing the old one.
+    static func forget() {
+        serverURL = nil
+        widgetKey = nil
+        WidgetCenter.shared.reloadAllTimelines()
+    }
 
     static var serverURL: URL? {
         get { defaults.string(forKey: "serverURL").flatMap(URL.init(string:)) }
